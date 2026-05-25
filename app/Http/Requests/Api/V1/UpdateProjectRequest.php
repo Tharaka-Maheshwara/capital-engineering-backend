@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
-class StoreProjectRequest extends FormRequest
+class UpdateProjectRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -30,18 +30,21 @@ class StoreProjectRequest extends FormRequest
 
     public function rules(): array
     {
+        $project = $this->route('project');
+        $projectId = is_object($project) ? $project->getKey() : $project;
+
         return [
-            'title' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', Rule::unique('projects', 'slug')],
-            'description' => ['required', 'string', 'max:50000'],
-            'status' => ['required', Rule::in(['planning', 'ongoing', 'completed'])],
-            'location' => ['required', 'string', 'max:255'],
-            'client' => ['required', 'string', 'max:255'],
-            'area' => ['nullable', 'string', 'max:255'],
-            'featured_image' => ['required', 'string', 'max:2048'],
-            'gallery' => ['nullable', 'array'],
+            'title' => ['sometimes', 'required', 'string', 'max:255'],
+            'slug' => ['sometimes', 'nullable', 'string', 'max:255', Rule::unique('projects', 'slug')->ignore($projectId)],
+            'description' => ['sometimes', 'required', 'string', 'max:50000'],
+            'status' => ['sometimes', 'required', Rule::in(['planning', 'ongoing', 'completed'])],
+            'location' => ['sometimes', 'required', 'string', 'max:255'],
+            'client' => ['sometimes', 'required', 'string', 'max:255'],
+            'area' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'featured_image' => ['sometimes', 'required', 'string', 'max:2048'],
+            'gallery' => ['sometimes', 'nullable', 'array'],
             'gallery.*' => ['string', 'max:2048'],
-            'meta_description' => ['nullable', 'string', 'max:160'],
+            'meta_description' => ['sometimes', 'nullable', 'string', 'max:160'],
         ];
     }
 
