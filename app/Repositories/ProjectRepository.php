@@ -20,4 +20,17 @@ class ProjectRepository
     {
         return $this->model->newQuery()->latest()->paginate($perPage);
     }
+
+    public function update(Project $project, array $attributes): Project
+    {
+        $project->fill($attributes);
+        $project->save();
+
+        return $project->fresh();
+    }
+
+    public function delete(Project $project): void
+    {
+        $project->delete();
+    }
 }

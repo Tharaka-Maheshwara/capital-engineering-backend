@@ -12,6 +12,8 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
     Route::get('projects', [ProjectController::class, 'index']);
     Route::post('projects', [ProjectController::class, 'store']);
     Route::get('projects/{project}', [ProjectController::class, 'show']);
+    Route::match(['put', 'patch'], 'projects/{project}', [ProjectController::class, 'update']);
+    Route::delete('projects/{project}', [ProjectController::class, 'destroy']);
 
     Route::get('services', [ServiceController::class, 'index']);
 });

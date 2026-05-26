@@ -21,4 +21,14 @@ class ProjectService
     {
         return $this->repo->paginate($perPage);
     }
+
+    public function update(Project $project, array $attributes): Project
+    {
+        return $this->repo->update($project, $attributes);
+    }
+
+    public function delete(Project $project): void
+    {
+        $this->repo->delete($project);
+    }
 }
