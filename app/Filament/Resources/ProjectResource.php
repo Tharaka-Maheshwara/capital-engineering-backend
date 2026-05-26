@@ -4,19 +4,16 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProjectResource\Pages;
 use App\Models\Project;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
-use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Support\Str;
 
 class ProjectResource extends Resource
 {
@@ -40,15 +37,7 @@ class ProjectResource extends Resource
                     TextInput::make('title')
                         ->required()
                         ->maxLength(255)
-                        ->live(onBlur: true)
-                        ->afterStateUpdated(function (Set $set, ?string $state): void {
-                            $set('slug', Str::slug($state ?? ''));
-                        }),
-                    TextInput::make('slug')
-                        ->required()
-                        ->maxLength(255)
-                        ->unique(ignoreRecord: true)
-                        ->helperText('Auto-generated from the title and used for SEO-friendly URLs.'),
+                        ->live(onBlur: true),
                     Select::make('status')
                         ->required()
                         ->options([
@@ -65,18 +54,6 @@ class ProjectResource extends Resource
                         ->maxLength(255),
                     TextInput::make('area')
                         ->maxLength(255),
-                    FileUpload::make('featured_image')
-                        ->required()
-                        ->image()
-                        ->disk('public')
-                        ->directory('projects/featured')
-                        ->preserveFilenames(false),
-                    FileUpload::make('gallery')
-                        ->multiple()
-                        ->image()
-                        ->disk('public')
-                        ->directory('projects/gallery')
-                        ->reorderable(),
                     RichEditor::make('description')
                         ->required()
                         ->columnSpanFull(),

@@ -10,7 +10,8 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
 
     Route::get('projects', [ProjectController::class, 'index']);
-    Route::get('projects/{project:slug}', [ProjectController::class, 'show']);
+    Route::post('projects', [ProjectController::class, 'store']);
+    Route::get('projects/{project}', [ProjectController::class, 'show']);
 
     Route::get('services', [ServiceController::class, 'index']);
 });

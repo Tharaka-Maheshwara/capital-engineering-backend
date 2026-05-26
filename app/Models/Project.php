@@ -11,23 +11,11 @@ class Project extends Model
 
     protected $fillable = [
         'title',
-        'slug',
         'description',
         'status',
         'location',
         'client',
         'area',
-        'featured_image',
-        'gallery',
         'meta_description',
     ];
-
-    protected $casts = [
-        'gallery' => 'array',
-    ];
-
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
-    }
 }

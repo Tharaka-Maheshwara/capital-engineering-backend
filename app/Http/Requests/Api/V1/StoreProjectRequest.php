@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Api\V1;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class StoreProjectRequest extends FormRequest
@@ -17,13 +16,10 @@ class StoreProjectRequest extends FormRequest
     {
         $this->merge([
             'title' => $this->sanitizeText($this->input('title')),
-            'slug' => $this->normalizeSlug($this->input('slug') ?: $this->input('title')),
             'description' => $this->sanitizeHtml($this->input('description')),
             'location' => $this->sanitizeText($this->input('location')),
             'client' => $this->sanitizeText($this->input('client')),
             'area' => $this->sanitizeText($this->input('area')),
-            'featured_image' => $this->sanitizePath($this->input('featured_image')),
-            'gallery' => $this->sanitizeGallery($this->input('gallery')),
             'meta_description' => $this->sanitizeText($this->input('meta_description')),
         ]);
     }
@@ -32,15 +28,11 @@ class StoreProjectRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', Rule::unique('projects', 'slug')],
             'description' => ['required', 'string', 'max:50000'],
             'status' => ['required', Rule::in(['planning', 'ongoing', 'completed'])],
             'location' => ['required', 'string', 'max:255'],
             'client' => ['required', 'string', 'max:255'],
             'area' => ['nullable', 'string', 'max:255'],
-            'featured_image' => ['required', 'string', 'max:2048'],
-            'gallery' => ['nullable', 'array'],
-            'gallery.*' => ['string', 'max:2048'],
             'meta_description' => ['nullable', 'string', 'max:160'],
         ];
     }
@@ -52,15 +44,6 @@ class StoreProjectRequest extends FormRequest
         }
 
         return trim(strip_tags((string) $value));
-    }
-
-    private function normalizeSlug(mixed $value): ?string
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        return Str::slug((string) $value);
     }
 
     private function sanitizeHtml(mixed $value): ?string
@@ -78,14 +61,5 @@ class StoreProjectRequest extends FormRequest
     private function sanitizePath(mixed $value): ?string
     {
         return $this->sanitizeText($value);
-    }
-
-    private function sanitizeGallery(mixed $value): ?array
-    {
-        if (! is_array($value)) {
-            return null;
-        }
-
-        return array_values(array_filter(array_map(fn ($item) => $this->sanitizePath($item), $value)));
     }
 }

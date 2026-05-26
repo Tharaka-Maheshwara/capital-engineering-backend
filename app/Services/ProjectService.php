@@ -12,18 +12,13 @@ class ProjectService
     {
     }
 
+    public function create(array $attributes): Project
+    {
+        return $this->repo->create($attributes);
+    }
+
     public function paginate(int $perPage = 12): LengthAwarePaginator
     {
         return $this->repo->paginate($perPage);
-    }
-
-    public function findBySlug(string $slug): ?Project
-    {
-        return $this->repo->findBySlug($slug);
-    }
-
-    public function findBySlugOrFail(string $slug): Project
-    {
-        return $this->repo->findBySlugOrFail($slug);
     }
 }

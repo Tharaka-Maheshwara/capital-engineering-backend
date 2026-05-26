@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\StoreProjectRequest;
 use App\Http\Resources\Api\V1\ProjectResource;
 use App\Models\Project;
 use App\Services\ProjectService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -20,6 +22,15 @@ class ProjectController extends Controller
         $perPage = max(1, min(100, (int) $request->integer('per_page', 12)));
 
         return ProjectResource::collection($this->projectService->paginate($perPage));
+    }
+
+    public function store(StoreProjectRequest $request): JsonResponse
+    {
+        $project = $this->projectService->create($request->validated());
+
+        return (new ProjectResource($project))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function show(Project $project): ProjectResource
