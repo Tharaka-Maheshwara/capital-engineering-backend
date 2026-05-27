@@ -17,6 +17,9 @@ class Project extends Model
         'location',
         'client',
         'area',
+        'price',
+        'start_date',
+        'end_date',
         'meta_description',
         'featured_image_alt',
         'featured_image_url',
@@ -26,6 +29,8 @@ class Project extends Model
 
     protected $casts = [
         'gallery' => 'array',
+        'start_date' => 'date',
+        'end_date' => 'date',
     ];
 
     protected static function booted(): void

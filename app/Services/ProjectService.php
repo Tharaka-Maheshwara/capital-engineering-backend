@@ -25,7 +25,7 @@ class ProjectService
     {
         return DB::transaction(function () use ($attributes) {
             // create base project without uploaded file attributes
-            $base = $attributes;
+            $base = $this->applyDefaults($attributes);
             unset($base['featured_image']);
             unset($base['gallery_images']);
 
@@ -33,6 +33,7 @@ class ProjectService
 
             try {
                 // pass created project id so upload goes into project-specific folder
+                $attributes = $this->applyDefaults($attributes);
                 $attributes = $this->storeFeaturedImage($attributes, $project->getKey());
                 $attributes = $this->storeGalleryImages($attributes, [], $project->getKey());
 
@@ -71,13 +72,14 @@ class ProjectService
             $existingGallery = $project->gallery ?? [];
 
             // keep base attributes separate to avoid passing UploadedFile into repo directly
-            $base = $attributes;
+            $base = $this->applyDefaults($attributes, $project);
             unset($base['featured_image']);
             unset($base['gallery_images']);
 
             $updatedProject = $this->repo->update($project, $base);
 
             try {
+                $attributes = $this->applyDefaults($attributes, $project);
                 $attributes = $this->storeFeaturedImage($attributes, $project->getKey(), $previousPublicId);
                 $attributes = $this->storeGalleryImages($attributes, $existingGallery, $project->getKey());
 
@@ -144,6 +146,35 @@ class ProjectService
         }
 
         unset($attributes['featured_image']);
+
+        return $attributes;
+    }
+
+    private function applyDefaults(array $attributes, ?Project $project = null): array
+    {
+        $title = $attributes['title'] ?? $project?->title;
+        $location = $attributes['location'] ?? $project?->location;
+        $client = $attributes['client'] ?? $project?->client;
+
+        if (!isset($attributes['featured_image_alt']) || $attributes['featured_image_alt'] === '') {
+            if ($title) {
+                $attributes['featured_image_alt'] = $title;
+            }
+        }
+
+        if (!isset($attributes['meta_description']) || $attributes['meta_description'] === '') {
+            $parts = array_filter([
+                $title ? "Project {$title}" : null,
+                $location ? "located in {$location}" : null,
+                $client ? "for {$client}" : null,
+            ]);
+            $description = $parts !== []
+                ? implode(' ', $parts).'.'
+                : null;
+            if ($description !== null) {
+                $attributes['meta_description'] = Str::limit($description, 160, '');
+            }
+        }
 
         return $attributes;
     }

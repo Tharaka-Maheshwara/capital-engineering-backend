@@ -30,7 +30,6 @@ class StoreProjectRequest extends FormRequest
             'location' => $this->sanitizeText($this->input('location')),
             'client' => $this->sanitizeText($this->input('client')),
             'area' => $this->sanitizeText($this->input('area')),
-            'meta_description' => $this->sanitizeText($this->input('meta_description')),
         ]);
     }
 
@@ -43,7 +42,9 @@ class StoreProjectRequest extends FormRequest
             'location' => ['required', 'string', 'max:255'],
             'client' => ['required', 'string', 'max:255'],
             'area' => ['nullable', 'string', 'max:255'],
-            'meta_description' => ['nullable', 'string', 'max:160'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'featured_image' => ['nullable', 'file', 'image', 'max:2048'],
             'featured_image_alt' => ['nullable', 'string', 'max:255'],
             'gallery_images' => ['sometimes', 'array'],
