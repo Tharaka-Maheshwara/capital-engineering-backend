@@ -34,6 +34,8 @@ class StoreProjectRequest extends FormRequest
             'client' => ['required', 'string', 'max:255'],
             'area' => ['nullable', 'string', 'max:255'],
             'meta_description' => ['nullable', 'string', 'max:160'],
+            'featured_image' => ['nullable', 'file', 'image', 'max:2048'],
+            'featured_image_alt' => ['nullable', 'string', 'max:255'],
         ];
     }
 

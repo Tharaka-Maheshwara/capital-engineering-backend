@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ProjectResource\Pages;
 use App\Models\Project;
 use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -56,6 +57,16 @@ class ProjectResource extends Resource
                         ->maxLength(255),
                     RichEditor::make('description')
                         ->required()
+                        ->columnSpanFull(),
+                    FileUpload::make('featured_image')
+                        ->image()
+                        ->disk('local')
+                        ->directory('temp/uploads')
+                        ->maxSize(2048)
+                        ->columnSpanFull(),
+                    TextInput::make('featured_image_alt')
+                        ->label('Display image alt text')
+                        ->maxLength(255)
                         ->columnSpanFull(),
                 ])
                 ->columns(2),

@@ -27,7 +27,12 @@ class ProjectController extends Controller
 
     public function store(StoreProjectRequest $request): JsonResponse
     {
-        $project = $this->projectService->create($request->validated());
+        $data = $request->validated();
+        if ($file = $request->file('featured_image')) {
+            $data['featured_image'] = $file;
+        }
+
+        $project = $this->projectService->create($data);
 
         return (new ProjectResource($project))
             ->response()
@@ -41,7 +46,12 @@ class ProjectController extends Controller
 
     public function update(UpdateProjectRequest $request, Project $project): ProjectResource
     {
-        $updatedProject = $this->projectService->update($project, $request->validated());
+        $data = $request->validated();
+        if ($file = $request->file('featured_image')) {
+            $data['featured_image'] = $file;
+        }
+
+        $updatedProject = $this->projectService->update($project, $data);
 
         return new ProjectResource($updatedProject);
     }

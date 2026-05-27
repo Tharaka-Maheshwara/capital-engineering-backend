@@ -37,6 +37,8 @@ class UpdateProjectRequest extends FormRequest
             'client' => ['sometimes', 'required', 'string', 'max:255'],
             'area' => ['sometimes', 'nullable', 'string', 'max:255'],
             'meta_description' => ['sometimes', 'nullable', 'string', 'max:160'],
+            'featured_image' => ['sometimes', 'nullable', 'file', 'image', 'max:2048'],
+            'featured_image_alt' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 
