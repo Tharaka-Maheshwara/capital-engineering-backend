@@ -14,6 +14,16 @@ class UpdateProjectRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $galleryFiles = $this->file('gallery_images');
+        if ($galleryFiles && !is_array($galleryFiles)) {
+            $this->files->set('gallery_images', [$galleryFiles]);
+        }
+        if ($galleryFiles) {
+            $this->merge([
+                'gallery_images' => is_array($galleryFiles) ? $galleryFiles : [$galleryFiles],
+            ]);
+        }
+
         $this->merge([
             'title' => $this->sanitizeText($this->input('title')),
             'description' => $this->sanitizeHtml($this->input('description')),
@@ -39,6 +49,8 @@ class UpdateProjectRequest extends FormRequest
             'meta_description' => ['sometimes', 'nullable', 'string', 'max:160'],
             'featured_image' => ['sometimes', 'nullable', 'file', 'image', 'max:2048'],
             'featured_image_alt' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'gallery_images' => ['sometimes', 'array'],
+            'gallery_images.*' => ['file', 'mimetypes:image/jpeg,image/png,image/webp,image/gif,image/avif,image/jpg', 'max:2048'],
         ];
     }
 

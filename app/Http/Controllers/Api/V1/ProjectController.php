@@ -31,6 +31,11 @@ class ProjectController extends Controller
         if ($file = $request->file('featured_image')) {
             $data['featured_image'] = $file;
         }
+        if ($galleryFiles = $request->file('gallery_images')) {
+            $data['gallery_images'] = is_array($galleryFiles)
+                ? $galleryFiles
+                : [$galleryFiles];
+        }
 
         $project = $this->projectService->create($data);
 
@@ -49,6 +54,11 @@ class ProjectController extends Controller
         $data = $request->validated();
         if ($file = $request->file('featured_image')) {
             $data['featured_image'] = $file;
+        }
+        if ($galleryFiles = $request->file('gallery_images')) {
+            $data['gallery_images'] = is_array($galleryFiles)
+                ? $galleryFiles
+                : [$galleryFiles];
         }
 
         $updatedProject = $this->projectService->update($project, $data);

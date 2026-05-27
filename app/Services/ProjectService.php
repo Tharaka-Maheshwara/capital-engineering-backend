@@ -27,18 +27,26 @@ class ProjectService
             // create base project without uploaded file attributes
             $base = $attributes;
             unset($base['featured_image']);
+            unset($base['gallery_images']);
 
             $project = $this->repo->create($base);
 
             try {
                 // pass created project id so upload goes into project-specific folder
                 $attributes = $this->storeFeaturedImage($attributes, $project->getKey());
+                $attributes = $this->storeGalleryImages($attributes, [], $project->getKey());
 
                 // update project with image fields if present
                 if (isset($attributes['featured_image_url']) || isset($attributes['featured_image_public_id'])) {
                     $project = $this->repo->update($project, [
                         'featured_image_url' => $attributes['featured_image_url'] ?? null,
                         'featured_image_public_id' => $attributes['featured_image_public_id'] ?? null,
+                    ]);
+                }
+
+                if (isset($attributes['gallery'])) {
+                    $project = $this->repo->update($project, [
+                        'gallery' => $attributes['gallery'],
                     ]);
                 }
             } catch (\Throwable $e) {
@@ -60,20 +68,29 @@ class ProjectService
     {
         return DB::transaction(function () use ($project, $attributes) {
             $previousPublicId = $project->featured_image_public_id;
+            $existingGallery = $project->gallery ?? [];
 
             // keep base attributes separate to avoid passing UploadedFile into repo directly
             $base = $attributes;
             unset($base['featured_image']);
+            unset($base['gallery_images']);
 
             $updatedProject = $this->repo->update($project, $base);
 
             try {
                 $attributes = $this->storeFeaturedImage($attributes, $project->getKey(), $previousPublicId);
+                $attributes = $this->storeGalleryImages($attributes, $existingGallery, $project->getKey());
 
                 if (isset($attributes['featured_image_url']) || isset($attributes['featured_image_public_id'])) {
                     $updatedProject = $this->repo->update($updatedProject, [
                         'featured_image_url' => $attributes['featured_image_url'] ?? null,
                         'featured_image_public_id' => $attributes['featured_image_public_id'] ?? null,
+                    ]);
+                }
+
+                if (isset($attributes['gallery'])) {
+                    $updatedProject = $this->repo->update($updatedProject, [
+                        'gallery' => $attributes['gallery'],
                     ]);
                 }
 
@@ -127,6 +144,44 @@ class ProjectService
         }
 
         unset($attributes['featured_image']);
+
+        return $attributes;
+    }
+
+    private function storeGalleryImages(array $attributes, array $existingGallery = [], ?int $projectId = null): array
+    {
+        $galleryFiles = $attributes['gallery_images'] ?? null;
+
+        if (!is_array($galleryFiles) || $galleryFiles === []) {
+            unset($attributes['gallery_images']);
+            return $attributes;
+        }
+
+        $folder = $projectId ? 'projects/'.$projectId.'/gallery' : 'projects/gallery';
+        $gallery = $existingGallery;
+
+        foreach ($galleryFiles as $file) {
+            if (!$file instanceof UploadedFile) {
+                continue;
+            }
+
+            $upload = $this->cloudinaryService->uploadProjectImage($file, $folder);
+            $publicId = $upload['public_id'] ?? null;
+            $url = $upload['url'] ?? null;
+
+            if ($publicId !== null || $url !== null) {
+                $gallery[] = array_filter([
+                    'public_id' => $publicId,
+                    'url' => $url,
+                ]);
+            }
+        }
+
+        if ($gallery !== []) {
+            $attributes['gallery'] = array_values($gallery);
+        }
+
+        unset($attributes['gallery_images']);
 
         return $attributes;
     }

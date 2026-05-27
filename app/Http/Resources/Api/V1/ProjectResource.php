@@ -23,7 +23,7 @@ class ProjectResource extends JsonResource
             'featured_image_alt' => $this->featured_image_alt,
             'featured_image_thumbnail' => $this->buildCloudinaryUrl($this->featured_image_public_id, 400),
             'featured_image_og' => $this->buildCloudinaryUrl($this->featured_image_public_id, 1200),
-            'gallery' => $this->gallery,
+            'gallery' => $this->normalizeGallery($this->gallery),
             'published_at' => $this->created_at?->toAtomString(),
         ];
     }
@@ -58,6 +58,49 @@ class ProjectResource extends JsonResource
 
         $encodedId = rawurlencode($publicId);
         return "https://res.cloudinary.com/{$cloud}/image/upload/w_{$width},f_auto,q_auto/{$encodedId}";
+    }
+
+    private function normalizeGallery(mixed $gallery): array
+    {
+        if (!is_array($gallery)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($gallery as $item) {
+            if (is_string($item) && $item !== '') {
+                if (str_starts_with($item, 'http://') || str_starts_with($item, 'https://')) {
+                    $normalized[] = $item;
+                    continue;
+                }
+
+                $url = $this->buildCloudinaryUrl($item, 400);
+                if ($url !== null) {
+                    $normalized[] = $url;
+                }
+
+                continue;
+            }
+
+            if (is_array($item)) {
+                $url = $item['secure_url'] ?? $item['url'] ?? null;
+                if (is_string($url) && $url !== '') {
+                    $normalized[] = $url;
+                    continue;
+                }
+
+                $publicId = $item['public_id'] ?? $item['publicId'] ?? null;
+                if (is_string($publicId) && $publicId !== '') {
+                    $built = $this->buildCloudinaryUrl($publicId, 400);
+                    if ($built !== null) {
+                        $normalized[] = $built;
+                    }
+                }
+            }
+        }
+
+        return $normalized;
     }
 
     private function sanitizeText(mixed $value): ?string
