@@ -30,6 +30,7 @@ class UpdateProjectRequest extends FormRequest
             'location' => $this->sanitizeText($this->input('location')),
             'client' => $this->sanitizeText($this->input('client')),
             'area' => $this->sanitizeText($this->input('area')),
+            'type' => $this->sanitizeText($this->input('type')),
         ]);
     }
 
@@ -48,6 +49,7 @@ class UpdateProjectRequest extends FormRequest
             'price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'start_date' => ['sometimes', 'nullable', 'date'],
             'end_date' => ['sometimes', 'nullable', 'date', 'after_or_equal:start_date'],
+            'type' => ['sometimes', 'required', 'string', 'in:commercial,residential,industrial'],
             'featured_image' => ['sometimes', 'nullable', 'file', 'image', 'max:2048'],
             'featured_image_alt' => ['sometimes', 'nullable', 'string', 'max:255'],
             'gallery_images' => ['sometimes', 'array'],

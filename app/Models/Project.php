@@ -14,6 +14,7 @@ class Project extends Model
         'title',
         'description',
         'status',
+        'type',
         'location',
         'client',
         'area',

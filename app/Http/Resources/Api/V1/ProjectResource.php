@@ -12,6 +12,7 @@ class ProjectResource extends JsonResource
             'id' => $this->id,
             'title' => $this->sanitizeText($this->title),
             'status' => $this->status,
+            'type' => $this->type ?? null,
             'status_label' => ucfirst((string) $this->status),
             'location' => $this->sanitizeText($this->location),
             'client' => $this->sanitizeText($this->client),
