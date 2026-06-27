@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\DesignController;
 use App\Http\Controllers\Api\V1\ServiceController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\ArticleController;
 
 Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
     Route::post('register', [AuthController::class, 'register']);
@@ -22,5 +23,12 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
     Route::match(['put', 'patch'], 'designs/{design}', [DesignController::class, 'update']);
     Route::delete('designs/{design}', [DesignController::class, 'destroy']);
 
+    Route::get('articles', [ArticleController::class, 'index']);
+    Route::post('articles', [ArticleController::class, 'store']);
+    Route::get('articles/{article}', [ArticleController::class, 'show']);
+    Route::match(['put', 'patch'], 'articles/{article}', [ArticleController::class, 'update']);
+    Route::delete('articles/{article}', [ArticleController::class, 'destroy']);
+
     Route::get('services', [ServiceController::class, 'index']);
 });
+
