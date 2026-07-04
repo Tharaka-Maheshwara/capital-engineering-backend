@@ -17,14 +17,15 @@ class ProjectService
     public function __construct(
         protected ProjectRepository $repo,
         protected CloudinaryService $cloudinaryService,
-    )
-    {
+    ) {
     }
 
     public function create(array $attributes): Project
     {
+        // 💡 බරපතල අප්ලෝඩ් ක්‍රියාවලීන් සඳහා කාල සීමාව තත්පර 120 දක්වා වැඩි කිරීම
+        set_time_limit(120);
+
         return DB::transaction(function () use ($attributes) {
-            // create base project without uploaded file attributes
             $base = $this->applyDefaults($attributes);
             unset($base['featured_image']);
             unset($base['gallery_images']);
@@ -32,12 +33,10 @@ class ProjectService
             $project = $this->repo->create($base);
 
             try {
-                // pass created project id so upload goes into project-specific folder
-                $attributes = $this->applyDefaults($attributes);
+                $attributes = $this->applyDefaults($attributes, $project);
                 $attributes = $this->storeFeaturedImage($attributes, $project->getKey());
                 $attributes = $this->storeGalleryImages($attributes, [], $project->getKey());
 
-                // update project with image fields if present
                 if (isset($attributes['featured_image_url']) || isset($attributes['featured_image_public_id'])) {
                     $project = $this->repo->update($project, [
                         'featured_image_url' => $attributes['featured_image_url'] ?? null,
@@ -52,7 +51,6 @@ class ProjectService
                 }
             } catch (\Throwable $e) {
                 Log::error('Cloudinary upload failed during project create: '.$e->getMessage(), ['exception' => $e]);
-                // rollback transaction and rethrow
                 throw $e;
             }
 
@@ -67,11 +65,13 @@ class ProjectService
 
     public function update(Project $project, array $attributes): Project
     {
+        // 💡 බරපතල අප්ලෝඩ් ක්‍රියාවලීන් සඳහා කාල සීමාව තත්පර 120 දක්වා වැඩි කිරීම
+        set_time_limit(120);
+
         return DB::transaction(function () use ($project, $attributes) {
             $previousPublicId = $project->featured_image_public_id;
             $existingGallery = $project->gallery ?? [];
 
-            // keep base attributes separate to avoid passing UploadedFile into repo directly
             $base = $this->applyDefaults($attributes, $project);
             unset($base['featured_image']);
             unset($base['gallery_images']);
@@ -117,36 +117,34 @@ class ProjectService
     private function storeFeaturedImage(array $attributes, ?int $projectId = null, ?string $previousPublicId = null): array
     {
         $featuredImage = $attributes['featured_image'] ?? null;
-
         $async = (bool) env('CLOUDINARY_ASYNC', false);
 
         if ($featuredImage instanceof UploadedFile) {
             $folder = $projectId ? 'projects/'.$projectId : 'projects';
 
             if ($async) {
-                // store temporarily in storage and dispatch job
                 $tmpPath = 'temp/uploads/'.Str::uuid()->toString().'.'.$featuredImage->getClientOriginalExtension();
                 Storage::putFileAs(dirname($tmpPath), $featuredImage, basename($tmpPath));
 
-                // dispatch job
                 UploadProjectImage::dispatch($tmpPath, $projectId ?? 0, $previousPublicId, $attributes['featured_image_alt'] ?? null);
 
-                // mark as deferred; job will update DB
                 $attributes['featured_image_deferred'] = true;
             } else {
-                $upload = $this->cloudinaryService->uploadProjectImage($featuredImage, $folder);
+                try {
+                    $upload = $this->cloudinaryService->uploadProjectImage($featuredImage, $folder);
+                    $attributes['featured_image_url'] = $upload['url'];
+                    $attributes['featured_image_public_id'] = $upload['public_id'];
 
-                $attributes['featured_image_url'] = $upload['url'];
-                $attributes['featured_image_public_id'] = $upload['public_id'];
-
-                if ($previousPublicId !== null && $previousPublicId !== $upload['public_id']) {
-                    $this->cloudinaryService->deleteProjectImage($previousPublicId);
+                    if ($previousPublicId !== null && $previousPublicId !== $upload['public_id']) {
+                        $this->cloudinaryService->deleteProjectImage($previousPublicId);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('Featured image Cloudinary sync upload failed: '.$e->getMessage());
                 }
             }
         }
 
         unset($attributes['featured_image']);
-
         return $attributes;
     }
 
@@ -168,9 +166,7 @@ class ProjectService
                 $location ? "located in {$location}" : null,
                 $client ? "for {$client}" : null,
             ]);
-            $description = $parts !== []
-                ? implode(' ', $parts).'.'
-                : null;
+            $description = $parts !== [] ? implode(' ', $parts).'.' : null;
             if ($description !== null) {
                 $attributes['meta_description'] = Str::limit($description, 160, '');
             }
@@ -196,15 +192,19 @@ class ProjectService
                 continue;
             }
 
-            $upload = $this->cloudinaryService->uploadProjectImage($file, $folder);
-            $publicId = $upload['public_id'] ?? null;
-            $url = $upload['url'] ?? null;
+            try {
+                $upload = $this->cloudinaryService->uploadProjectImage($file, $folder);
+                $publicId = $upload['public_id'] ?? null;
+                $url = $upload['url'] ?? null;
 
-            if ($publicId !== null || $url !== null) {
-                $gallery[] = array_filter([
-                    'public_id' => $publicId,
-                    'url' => $url,
-                ]);
+                if ($publicId !== null || $url !== null) {
+                    $gallery[] = array_filter([
+                        'public_id' => $publicId,
+                        'url' => $url,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::error('Gallery image Cloudinary sync upload failed for a file: '.$e->getMessage());
             }
         }
 
@@ -213,7 +213,6 @@ class ProjectService
         }
 
         unset($attributes['gallery_images']);
-
         return $attributes;
     }
 }
