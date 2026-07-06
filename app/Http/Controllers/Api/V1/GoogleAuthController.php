@@ -8,23 +8,22 @@ use App\Models\User;
 use Google\Client as GoogleClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Http\RedirectResponse;
+use GuzzleHttp\Client as GuzzleClient;
 
 class GoogleAuthController extends Controller
 {
     /**
      * Handle Google Sign-In by verifying the ID token and creating/finding the user.
      */
-    public function handleGoogleAuth(GoogleAuthRequest $request): JsonResponse|RedirectResponse
+    public function handleGoogleAuth(GoogleAuthRequest $request): JsonResponse
     {
         $idToken = $request->string('id_token')->toString();
-        $redirectUri = rtrim((string) env('FRONTEND_URL', 'http://localhost:3000'), '/') . '/auth/google/callback';
 
         // Verify the ID token with Google
         $googlePayload = $this->verifyGoogleToken($idToken);
 
         if ($googlePayload === null) {
-            return $this->redirectWithError($redirectUri, 'Invalid Google token. Please try again.');
+            return response()->json(['message' => 'Invalid Google token. Please try again.'], 400);
         }
 
         $googleId = $googlePayload['sub'] ?? null;
@@ -34,11 +33,11 @@ class GoogleAuthController extends Controller
         $emailVerified = $googlePayload['email_verified'] ?? false;
 
         if (!$googleId || !$email) {
-            return $this->redirectWithError($redirectUri, 'Could not retrieve your Google account information.');
+            return response()->json(['message' => 'Could not retrieve your Google account information.'], 400);
         }
 
         if (!$emailVerified) {
-            return $this->redirectWithError($redirectUri, 'Your Google email address is not verified.');
+            return response()->json(['message' => 'Your Google email address is not verified.'], 400);
         }
 
         // Find existing user by google_id or email
@@ -74,24 +73,20 @@ class GoogleAuthController extends Controller
 
         $token = $user->issueApiToken();
 
-        $userPayload = [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role,
-            'avatar' => $user->avatar,
-            'created_at' => $user->created_at?->toISOString(),
-        ];
-
-        $query = http_build_query([
-            'token' => $token,
-            'user' => json_encode($userPayload, JSON_UNESCAPED_SLASHES),
-            'message' => $isNewUser
-                ? 'Account created successfully with Google.'
-                : 'Signed in successfully with Google.',
-        ]);
-
-        return redirect()->away($redirectUri . '?' . $query);
+        return response()->json([
+            'message' => $isNewUser ? 'Account created successfully with Google.' : 'Signed in successfully with Google.',
+            'data' => [
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'avatar' => $user->avatar,
+                    'created_at' => $user->created_at?->toISOString(),
+                ]
+            ]
+        ], 200);
     }
 
     /**
@@ -107,7 +102,7 @@ class GoogleAuthController extends Controller
         }
 
         try {
-            $client = new GoogleClient(['client_id' => $clientId]);
+            $client = $this->createGoogleClient($clientId);
             $payload = $client->verifyIdToken($idToken);
 
             if (!$payload) {
@@ -124,10 +119,17 @@ class GoogleAuthController extends Controller
         }
     }
 
-    private function redirectWithError(string $redirectUri, string $message): RedirectResponse
+    private function createGoogleClient(string $clientId): GoogleClient
     {
-        return redirect()->away($redirectUri . '?' . http_build_query([
-            'error' => $message,
-        ]));
+        $client = new GoogleClient(['client_id' => $clientId]);
+        $caBundlePath = base_path('cacert.pem');
+
+        if (is_file($caBundlePath)) {
+            $client->setHttpClient(new GuzzleClient([
+                'verify' => $caBundlePath,
+            ]));
+        }
+
+        return $client;
     }
 }
