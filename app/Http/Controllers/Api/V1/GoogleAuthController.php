@@ -8,23 +8,23 @@ use App\Models\User;
 use Google\Client as GoogleClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\RedirectResponse;
 
 class GoogleAuthController extends Controller
 {
     /**
      * Handle Google Sign-In by verifying the ID token and creating/finding the user.
      */
-    public function handleGoogleAuth(GoogleAuthRequest $request): JsonResponse
+    public function handleGoogleAuth(GoogleAuthRequest $request): JsonResponse|RedirectResponse
     {
         $idToken = $request->string('id_token')->toString();
+        $redirectUri = rtrim((string) env('FRONTEND_URL', 'http://localhost:3000'), '/') . '/auth/google/callback';
 
         // Verify the ID token with Google
         $googlePayload = $this->verifyGoogleToken($idToken);
 
         if ($googlePayload === null) {
-            return response()->json([
-                'message' => 'Invalid Google token. Please try again.',
-            ], 422);
+            return $this->redirectWithError($redirectUri, 'Invalid Google token. Please try again.');
         }
 
         $googleId = $googlePayload['sub'] ?? null;
@@ -34,15 +34,11 @@ class GoogleAuthController extends Controller
         $emailVerified = $googlePayload['email_verified'] ?? false;
 
         if (!$googleId || !$email) {
-            return response()->json([
-                'message' => 'Could not retrieve your Google account information.',
-            ], 422);
+            return $this->redirectWithError($redirectUri, 'Could not retrieve your Google account information.');
         }
 
         if (!$emailVerified) {
-            return response()->json([
-                'message' => 'Your Google email address is not verified.',
-            ], 422);
+            return $this->redirectWithError($redirectUri, 'Your Google email address is not verified.');
         }
 
         // Find existing user by google_id or email
@@ -78,22 +74,24 @@ class GoogleAuthController extends Controller
 
         $token = $user->issueApiToken();
 
-        return response()->json([
+        $userPayload = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'avatar' => $user->avatar,
+            'created_at' => $user->created_at?->toISOString(),
+        ];
+
+        $query = http_build_query([
+            'token' => $token,
+            'user' => json_encode($userPayload, JSON_UNESCAPED_SLASHES),
             'message' => $isNewUser
                 ? 'Account created successfully with Google.'
                 : 'Signed in successfully with Google.',
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'avatar' => $user->avatar,
-                    'created_at' => $user->created_at?->toISOString(),
-                ],
-                'token' => $token,
-            ],
-        ], $isNewUser ? 201 : 200);
+        ]);
+
+        return redirect()->away($redirectUri . '?' . $query);
     }
 
     /**
@@ -124,5 +122,12 @@ class GoogleAuthController extends Controller
             ]);
             return null;
         }
+    }
+
+    private function redirectWithError(string $redirectUri, string $message): RedirectResponse
+    {
+        return redirect()->away($redirectUri . '?' . http_build_query([
+            'error' => $message,
+        ]));
     }
 }
