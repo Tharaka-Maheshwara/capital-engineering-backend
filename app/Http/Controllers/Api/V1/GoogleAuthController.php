@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Mail\WelcomeLoginMail;
+use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\GoogleAuthRequest;
 use App\Models\User;
@@ -69,6 +71,13 @@ class GoogleAuthController extends Controller
             ]);
 
             $isNewUser = true;
+
+            // First-time login: Auto-send welcome email
+            try {
+                Mail::to($user->email)->send(new WelcomeLoginMail($user));
+            } catch (\Exception $e) {
+                Log::error('Failed to send welcome email to ' . $user->email . ': ' . $e->getMessage());
+            }
         }
 
         $token = $user->issueApiToken();
