@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\ServiceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\GoogleAuthController;
 use App\Http\Controllers\Api\V1\ArticleController;
+use App\Http\Controllers\Api\V1\FeedbackController;
 use App\Http\Controllers\Api\V1\ContactController;
 
 Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
@@ -33,6 +34,9 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
     Route::get('articles/{article}', [ArticleController::class, 'show']);
     Route::match(['put', 'patch'], 'articles/{article}', [ArticleController::class, 'update']);
     Route::delete('articles/{article}', [ArticleController::class, 'destroy']);
+
+    Route::get('feedbacks', [FeedbackController::class, 'index']);
+    Route::post('feedbacks', [FeedbackController::class, 'store']);
 
     Route::get('services', [ServiceController::class, 'index']);
     Route::post('contact', [ContactController::class, 'store']);
