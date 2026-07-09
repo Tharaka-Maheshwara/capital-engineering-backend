@@ -1,0 +1,37 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('projects', function (Blueprint $table): void {
+            $columns = [];
+            if (Schema::hasColumn('projects', 'slug')) {
+                $columns[] = 'slug';
+            }
+            if (Schema::hasColumn('projects', 'featured_image')) {
+                $columns[] = 'featured_image';
+            }
+            if (Schema::hasColumn('projects', 'gallery')) {
+                $columns[] = 'gallery';
+            }
+
+            if (! empty($columns)) {
+                $table->dropColumn($columns);
+            }
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('projects', function (Blueprint $table): void {
+            $table->string('slug')->unique()->after('title');
+            $table->string('featured_image')->after('area');
+            $table->json('gallery')->nullable()->after('featured_image');
+        });
+    }
+};
