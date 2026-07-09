@@ -70,6 +70,7 @@ Start Command
 php artisan migrate --force && php artisan queue:work --sleep=3 --tries=3
 
 Notes:
+
 - The `key:generate` command above shows a pattern for generating an APP_KEY during build; in production you should set `APP_KEY` as an ENV secret instead of generating on each build.
 - Running migrations during start can be OK, but you may prefer to run them manually from the Render dashboard or via a deploy hook once DB creds are set.
 
