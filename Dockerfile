@@ -3,8 +3,13 @@ FROM composer:2 AS builder
 
 WORKDIR /app
 
-# Cache composer files first to leverage layer caching
-COPY composer.json composer.lock /app/
+# Copy the Laravel files needed by Composer scripts before install runs.
+COPY composer.json composer.lock artisan /app/
+COPY bootstrap /app/bootstrap
+COPY config /app/config
+COPY app /app/app
+COPY routes /app/routes
+COPY database /app/database
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
 
 # Copy application source
