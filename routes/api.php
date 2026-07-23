@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\GoogleAuthController;
 use App\Http\Controllers\Api\V1\ArticleController;
 use App\Http\Controllers\Api\V1\FeedbackController;
 use App\Http\Controllers\Api\V1\ContactController;
+use App\Http\Controllers\Api\V1\CostEstimationController;
 
 Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
     Route::post('register', [AuthController::class, 'register']);
@@ -40,5 +41,9 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
 
     Route::get('services', [ServiceController::class, 'index']);
     Route::post('contact', [ContactController::class, 'store']);
+
+    Route::get('cost-estimations', [CostEstimationController::class, 'index']);
+    Route::post('cost-estimations', [CostEstimationController::class, 'store']);
+    Route::delete('cost-estimations/{costEstimation}', [CostEstimationController::class, 'destroy']);
 });
 
